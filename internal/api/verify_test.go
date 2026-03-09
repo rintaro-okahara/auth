@@ -1238,7 +1238,8 @@ func (ts *VerifyTestSuite) TestPrepErrorRedirectURL() {
 	}
 }
 
-func (ts *VerifyTestSuite) TestPrepPKCERedirectURL() {
+func TestPrepPKCERedirectURL(t *testing.T) {
+	api := &API{}
 	cases := []struct {
 		desc     string
 		rurl     string
@@ -1283,10 +1284,10 @@ func (ts *VerifyTestSuite) TestPrepPKCERedirectURL() {
 		},
 	}
 	for _, c := range cases {
-		ts.Run(c.desc, func() {
-			result, err := ts.API.prepPKCERedirectURL(c.rurl, c.code)
-			require.NoError(ts.T(), err)
-			require.Equal(ts.T(), c.expected, result)
+		t.Run(c.desc, func(t *testing.T) {
+			result, err := api.prepPKCERedirectURL(c.rurl, c.code)
+			require.NoError(t, err)
+			require.Equal(t, c.expected, result)
 		})
 	}
 }
