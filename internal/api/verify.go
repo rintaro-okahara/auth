@@ -532,14 +532,21 @@ func (a *API) prepRedirectURL(message string, rurl string, flowType models.FlowT
 }
 
 func (a *API) prepPKCERedirectURL(rurl, code string) (string, error) {
-	// Avoid url.Parse → String() round-trip: Go drops "//" from custom scheme
-	// URIs with empty host (e.g. "myapp://"), producing "myapp:?code=..." which
-	// corrupts the code on iOS. Append the query parameter directly instead.
-	sep := "?"
-	if strings.Contains(rurl, "?") {
-		sep = "&"
+	u, err := url.Parse(rurl)
+	if err != nil {
+		return "", err
 	}
-	return rurl + sep + "code=" + url.QueryEscape(code), nil
+	q := u.Query()
+	q.Set("code", code)
+	u.RawQuery = q.Encode()
+	// url.String() drops "//" from custom scheme URIs with empty host (e.g.
+	// "myapp://"), corrupting the auth code on iOS. Reconstruct from the
+	// original string to preserve the authority marker.
+	base := rurl
+	if i := strings.IndexAny(base, "?#"); i != -1 {
+		base = base[:i]
+	}
+	return base + "?" + u.RawQuery, nil
 }
 
 func (a *API) emailChangeVerify(r *http.Request, conn *storage.Connection, params *VerifyParams, user *models.User) (*models.User, error) {
