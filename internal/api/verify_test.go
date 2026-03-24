@@ -1238,6 +1238,60 @@ func (ts *VerifyTestSuite) TestPrepErrorRedirectURL() {
 	}
 }
 
+func TestPrepPKCERedirectURL(t *testing.T) {
+	api := &API{}
+	cases := []struct {
+		desc     string
+		rurl     string
+		code     string
+		expected string
+	}{
+		{
+			desc:     "custom scheme with empty host preserves //",
+			rurl:     "myapp://",
+			code:     "testcode",
+			expected: "myapp://?code=testcode",
+		},
+		{
+			desc:     "custom scheme with path",
+			rurl:     "myapp://auth/callback",
+			code:     "testcode",
+			expected: "myapp://auth/callback?code=testcode",
+		},
+		{
+			desc:     "https URL with no existing query params",
+			rurl:     "https://example.com/callback",
+			code:     "testcode",
+			expected: "https://example.com/callback?code=testcode",
+		},
+		{
+			desc:     "https URL with existing query params",
+			rurl:     "https://example.com/callback?foo=bar",
+			code:     "testcode",
+			expected: "https://example.com/callback?code=testcode&foo=bar",
+		},
+		{
+			desc:     "duplicate code param is overridden",
+			rurl:     "myapp://?code=oldcode",
+			code:     "newcode",
+			expected: "myapp://?code=newcode",
+		},
+		{
+			desc:     "code value is properly URL-escaped",
+			rurl:     "myapp://",
+			code:     "code with spaces&special=chars",
+			expected: "myapp://?code=code+with+spaces%26special%3Dchars",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			result, err := api.prepPKCERedirectURL(c.rurl, c.code)
+			require.NoError(t, err)
+			require.Equal(t, c.expected, result)
+		})
+	}
+}
+
 func (ts *VerifyTestSuite) TestVerifyValidateParams() {
 	cases := []struct {
 		desc     string

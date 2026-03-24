@@ -539,7 +539,14 @@ func (a *API) prepPKCERedirectURL(rurl, code string) (string, error) {
 	q := u.Query()
 	q.Set("code", code)
 	u.RawQuery = q.Encode()
-	return u.String(), nil
+	// url.String() drops "//" from custom scheme URIs with empty host (e.g.
+	// "myapp://"), corrupting the auth code on iOS. Reconstruct from the
+	// original string to preserve the authority marker.
+	base := rurl
+	if i := strings.IndexAny(base, "?#"); i != -1 {
+		base = base[:i]
+	}
+	return base + "?" + u.RawQuery, nil
 }
 
 func (a *API) emailChangeVerify(r *http.Request, conn *storage.Connection, params *VerifyParams, user *models.User) (*models.User, error) {
